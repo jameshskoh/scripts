@@ -1,2 +1,2 @@
 # scripts
-A repository that contains all kinds of utility scripts I need
+A repository that contains all kinds of utility scripts I need.
