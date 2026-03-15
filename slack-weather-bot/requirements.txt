@@ -1,0 +1,4 @@
+slack-bolt>=1.27.0
+apscheduler>=3.11.2
+requests>=2.32.5
+python-dotenv>=1.2.2
