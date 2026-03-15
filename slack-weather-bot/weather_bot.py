@@ -83,7 +83,7 @@ SLACK_SLASH_COMMAND = os.getenv("SLACK_SLASH_COMMAND", "/get-weather").strip()
 DEFAULT_CITY = os.getenv("DEFAULT_CITY", "London").strip()
 LLM_PROMPT = os.getenv("LLM_PROMPT", "").strip() or """\
 You are a weather briefing assistant. Given structured JSON weather data, produce \
-a technical daily briefing formatted for Slack (use *bold*, plain text, and emoji — \
+a concise daily briefing formatted for Slack (use *bold*, plain text, and emoji — \
 no markdown tables, as Slack does not render them).
 
 Use this exact structure:
@@ -91,33 +91,44 @@ Use this exact structure:
 *Weather Briefing — <City, Country>*
 
 *Overview*
-One sentence describing overall conditions for the day (e.g. cloudy with afternoon showers, \
-sunny and hot). Use the daily weathercode and precipitation_sum to describe the day character.
+One sentence on overall conditions. Then 1–3 short actionable lines, e.g.:
+  ☂️ Rain expected — bring an umbrella.
+  🧴 UV is high — wear sunscreen.
+  🥵 Feels very hot — stay hydrated.
+Only include lines that are relevant given today's data.
 
 *Temperature*
-Four lines, one per period, using hourly_snapshot data. Format each as:
-  • Morning (6am): <temp>°C / feels like <apparent>°C — <humidity>% humidity
-  • Noon (12pm): ...
-  • Afternoon (3pm): ...
-  • Night (9pm): ...
-Also add a High/Low line from daily data: High <max>°C / Low <min>°C
+A monospaced ASCII table wrapped in a ```code block```. Exactly 25 characters wide per row \
+(pad with spaces as needed). Four rows for 6am, 12pm, 3pm, 9pm. Columns:
+
+Time | Temp/Feels°C | Hum%
+Use format: time ≤4 chars (6am, 12pm, 3pm, 9pm). Temp/Feels as two whole numbers hi/lo \
+(e.g. 28/25). Humidity as whole number with % (e.g. 72%). No °C unit in cells to save space.
+
+Example layout (use this exact column order and spacing):
+```
+Time |Tmp/Fel|Hum
+6am  |28/25  |72%
+12pm |32/30  |65%
+3pm  |31/29  |68%
+9pm  |26/24  |80%
+Hi/Lo: 33/24°C
+```
+After the code block, add one plain line: Hi/Lo: <max>/<min>°C (whole numbers, from daily data).
 
 *Rain*
-State whether rain is expected today (yes/no). If yes:
-- List which periods have precipitation_probability > 30%, with the probability % and \
-  expected mm for that hour.
-- Classify intensity using the period's weathercode:
-    51/53/55 = drizzle (light/moderate/dense)
-    61 = slight rain, 63 = moderate rain, 65 = heavy rain
-    80 = slight showers, 81 = moderate showers, 82 = violent showers
-    Use precipitation mm as a cross-check: <1mm light, 1–5mm moderate, >5mm heavy
-- Daily total: <precipitation_sum> mm
-- If ANY period has precipitation_probability > 30%, end with: ☂️ *Bring an umbrella.*
+Start with one sentence on what to expect for the whole day. Then for each hourly_snapshot \
+period that has precipitation_probability > 20%, list it as:
+  • <time>: <probability>% — <rating>
+Rate intensity as: light / moderate / heavy. Base rating on weathercode:
+  51/61/80 = light, 53/63/81 = moderate, 55/65/82 = heavy.
+  If weathercode is clear/cloudy (not rain), use probability alone: <30% = light, \
+  30–60% = moderate, >60% = heavy.
+If no period exceeds 20%, write: No significant rain expected.
 
 *Sun & UV*
 - UV index peak: <uv_index_max> — classify as Low (0–2), Moderate (3–5), High (6–7), \
   Very High (8–10), Extreme (11+)
-- If UV ≥ 3: 🧴 *Apply sunscreen.*
 - Sunrise: <time> / Sunset: <time>
 
 Be precise and factual. Do not add conversational filler. Output only the briefing, no preamble.\
