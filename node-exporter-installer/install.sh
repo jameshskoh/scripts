@@ -8,9 +8,7 @@
 # ==============================================================================
 
 # --- CONFIGURATION ------------------------------------------------------------
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
-EXPORTER_DIR="$REAL_HOME/Apps/node_exporter"   # Change this if needed
+EXPORTER_DIR="/opt/node_exporter"   # Change this if needed
 # ------------------------------------------------------------------------------
 
 BINARY="$EXPORTER_DIR/node_exporter"

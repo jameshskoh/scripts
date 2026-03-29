@@ -8,9 +8,7 @@
 # ==============================================================================
 
 # --- CONFIGURATION ------------------------------------------------------------
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
-EXPORTER_DIR="$REAL_HOME/Apps/node_exporter"   # Change this if needed
+EXPORTER_DIR="/opt/node_exporter"   # Change this if needed
 # ------------------------------------------------------------------------------
 
 SERVICE_NAME="node-exporter"
@@ -59,12 +57,6 @@ fi
 info "Reloading systemd daemon..."
 systemctl daemon-reload
 systemctl reset-failed 2>/dev/null || true
-
-# ---- Remove ownership / restore to current user ------------------------------
-if [[ -d "$EXPORTER_DIR" ]]; then
-    info "Restoring ownership of $EXPORTER_DIR to $REAL_USER"
-    chown -R "$REAL_USER":"$REAL_USER" "$EXPORTER_DIR"
-fi
 
 # ---- Remove dedicated system user --------------------------------------------
 if id "$SERVICE_USER" &>/dev/null; then
