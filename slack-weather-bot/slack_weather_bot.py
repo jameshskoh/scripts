@@ -287,7 +287,7 @@ def summarise_weather(weather_data: dict) -> str:
     prompt = LLM_PROMPT + "\n\n" + json.dumps(weather_data, indent=2)
     logger.info("Calling claude CLI to summarise weather data")
     result = subprocess.run(
-        [CLAUDE_CLI_PATH, "-p", prompt],
+        [CLAUDE_CLI_PATH, "--model", "claude-haiku-4-5", "-p", prompt],
         capture_output=True,
         text=True,
         timeout=60,
