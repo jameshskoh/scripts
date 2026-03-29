@@ -40,6 +40,7 @@ import json
 import logging
 import os
 import subprocess
+import time
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -338,18 +339,27 @@ def post_weather_to_slack(
 
     try:
         summary = summarise_weather(weather_data)
-    except (RuntimeError, FileNotFoundError) as exc:
-        error_msg = f":x: Failed to generate weather summary: `{exc}`"
-        logger.error(error_msg)
-        client.chat_postMessage(channel=SLACK_CHANNEL_ID, text=error_msg)
-        return
-    except Exception as exc:
-        logger.exception("Unexpected error during LLM summarisation")
+    except Exception as first_exc:
+        logger.warning("LLM summarisation failed on first attempt: %s — retrying in 5s", first_exc)
         client.chat_postMessage(
             channel=SLACK_CHANNEL_ID,
-            text=f":x: Unexpected error generating summary: `{exc}`",
+            text=":warning: Failed to generate weather summary, retrying once in 5 seconds...",
         )
-        return
+        time.sleep(5)
+        try:
+            summary = summarise_weather(weather_data)
+        except (RuntimeError, FileNotFoundError) as exc:
+            error_msg = f":x: Failed to generate weather summary: `{exc}`"
+            logger.error(error_msg)
+            client.chat_postMessage(channel=SLACK_CHANNEL_ID, text=error_msg)
+            return
+        except Exception as exc:
+            logger.exception("Unexpected error during LLM summarisation (retry)")
+            client.chat_postMessage(
+                channel=SLACK_CHANNEL_ID,
+                text=f":x: Unexpected error generating summary: `{exc}`",
+            )
+            return
 
     logger.info("Posting weather summary to channel %s (triggered by: %s)", SLACK_CHANNEL_ID, triggered_by)
     client.chat_postMessage(channel=SLACK_CHANNEL_ID, text=summary)
