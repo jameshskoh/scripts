@@ -1,2 +1,2 @@
 source .venv/bin/activate
-python3 repo_bot.py
+python3 slack_repo_bot.py
