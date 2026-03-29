@@ -27,6 +27,9 @@ Environment variables (all read from .env):
     SCHEDULE_CRON        — 5-field cron expression for periodic posting,
                            e.g. "0 9 * * 1-5" (default: unset = disabled)
     SCHEDULE_TIMEZONE    — timezone for SCHEDULE_CRON (default: UTC)
+    CLAUDE_CLI_PATH      — full path to the claude binary
+                           (default: "claude"; override when PATH is restricted,
+                           e.g. systemd: /home/<user>/.local/bin/claude)
     LLM_PROMPT           — override the system prompt sent to claude CLI
 
 Slack App settings required (api.slack.com/apps):
@@ -81,6 +84,7 @@ SLACK_CHANNEL_ID = _require_env("SLACK_CHANNEL_ID")
 SLACK_SLASH_COMMAND = os.getenv("SLACK_SLASH_COMMAND", "/get-weather").strip()
 
 # Weather / LLM
+CLAUDE_CLI_PATH = os.getenv("CLAUDE_CLI_PATH", "claude").strip()
 DEFAULT_CITY = os.getenv("DEFAULT_CITY", "London").strip()
 LLM_PROMPT = os.getenv("LLM_PROMPT", "").strip() or """\
 You are a weather briefing assistant. Given structured JSON weather data, produce \
@@ -283,7 +287,7 @@ def summarise_weather(weather_data: dict) -> str:
     prompt = LLM_PROMPT + "\n\n" + json.dumps(weather_data, indent=2)
     logger.info("Calling claude CLI to summarise weather data")
     result = subprocess.run(
-        ["claude", "-p", prompt],
+        [CLAUDE_CLI_PATH, "-p", prompt],
         capture_output=True,
         text=True,
         timeout=60,
